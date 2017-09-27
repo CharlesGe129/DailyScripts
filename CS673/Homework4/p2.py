@@ -52,7 +52,7 @@ def check(a, b):
 
 
 i = 0
-while(True):
+while():
     i += 1
     if not do():
         print(i)
