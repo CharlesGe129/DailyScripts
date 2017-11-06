@@ -8,7 +8,7 @@ end = 0
 def prepare_map():
     for i in range(len(name)):
         name_to_index[name[i]] = i
-        rs[i] = []
+        rs[i] = [0]
 
 
 def prepare_adj():
@@ -65,6 +65,23 @@ def search(node):
         search(each)
 
 
+def search_num(node):
+    global rs
+    nodes = []
+    print(f"Current node: {node}")
+    for v in Adj[node]:
+        print(f"        Adj: {v}")
+        print(f"        rs[{v}] += {rs[node]}")
+        print(rs)
+        rs[v][0] += rs[node][0]
+        nodes.append(v)
+    if node != end:
+        rs[node][0] = 0
+    print(f"Ready to recursion: node={nodes}")
+    for each in nodes:
+        search_num(each)
+
+
 def process_name(rs):
     result = []
     print(rs)
@@ -89,10 +106,10 @@ def do():
     show_matrix()
     end = name_to_index['d']
 
-    rs[name_to_index['a']] = [[name_to_index['a']]]
-    search(name_to_index['a'])
+    rs[name_to_index['a']] = [1]
+    search_num(name_to_index['a'])
 
-    rs = process_name(rs)
+    #rs = process_name(rs)
     [print(f"{i}: {rs[i]}") for i in range(len(name))]
 
 
