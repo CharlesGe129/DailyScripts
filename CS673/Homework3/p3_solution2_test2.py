@@ -1,4 +1,4 @@
-name = ['a', 'b', 'c', 'd', 'e', 'f']
+name = ['m', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 name_to_index = {}
 Adj = []
 rs = {}
@@ -24,12 +24,20 @@ def prepare_adj():
     global Adj
     for i in range(len(name)):
         Adj.append([])
-    Adj[0] = ['b', 'c', 'd', 'e']
-    Adj[1] = ['c', 'f']
-    Adj[2] = ['f']
-    Adj[3] = ['c', 'b']
-    Adj[4] = ['f']
-    Adj[5] = []
+    Adj[0] = ['q', 'r', 'x']
+    Adj[1] = ['o', 'q', 'u']
+    Adj[2] = ['r', 's', 'v']
+    Adj[3] = ['o', 's', 'z']
+    Adj[4] = ['t']
+    Adj[5] = ['u', 'y']
+    Adj[6] = ['r']
+    Adj[7] = []
+    Adj[8] = ['t']
+    Adj[9] = ['w', 'x']
+    Adj[10] = ['z']
+    Adj[11] = []
+    Adj[12] = ['v']
+    Adj[13] = []
     for i in range(len(Adj)):
         a = list()
         for node in Adj[i]:
@@ -104,10 +112,10 @@ def do():
     prepare_map()
     prepare_adj()
     show_matrix()
-    end = name_to_index['f']
+    end = name_to_index['v']
 
-    rs[name_to_index['a']] = 1
-    search(name_to_index['f'])
+    rs[name_to_index['p']] = 1
+    search(name_to_index['v'])
 
     #rs = process_name(rs)
     [print(f"{i}: {rs[i]}") for i in range(len(name))]
