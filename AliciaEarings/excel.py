@@ -89,6 +89,34 @@ class Excel:
             table.cell(i, indices['折后利润']).value = total_profit
         self.f_product.save(self.path + '/product.xlsx')
 
+    def cal_order_group_by_buyer(self):
+        table = self.sheet_product
+        indices = self.get_indices(table)
+        data = dict()
+        for i in range(2, table.max_row + 1):
+            entry = list()
+            for j in range(1, table.max_column + 1):
+                entry.append(table.cell(i, j).value)
+            id = table.cell(i, indices['微信id']).value
+            total = table.cell(i, indices['折后金额']).value
+            if id in data:
+                data[id]['sum'] += total
+                data[id]['entry'].append(entry)
+            else:
+                data[id] = dict()
+                data[id]['sum'] = total
+                data[id]['entry'] = [entry]
+        i = 2
+        for id, value in data.items():
+            for each_row in value['entry']:
+                for j in range(len(each_row)):
+                    table.cell(i, j + 1).value = each_row[j]
+                table.cell(i, j + 2).value = value['sum']
+                i += 1
+        table.cell(1, j + 2).value = '该用户今日总购买金额（若一日多单请老婆大人自行计算~）'
+        self.f_product.save(self.path + '/product.xlsx')
+        print("已初步整理今日每个微信买家的产品信息及总购买金额。若一日多单请老婆大人自行计算该单需要额外支付多少钱~")
+
     def get_col_sell(self):
         table = self.sheet_product
         col_sell = -1
@@ -133,3 +161,4 @@ response = e.cal_today_storage()
 if not response['success']:
     print(response['msg'])
 e.cal_today_selling()
+e.cal_order_group_by_buyer()
