@@ -1,4 +1,5 @@
 import openpyxl
+import openpyxl.styles as sty
 import os
 import time
 import datetime
@@ -65,6 +66,12 @@ class Excel:
         # Write back to xlsx
         for each in data_storage:
             self.sheet_storage.cell(each[0] + 1, col_storage).value = each[1]
+        for row in range(2, self.sheet_storage.max_row + 1):
+            for col in range(1, self.sheet_storage.max_column + 1):
+                num_storage = self.sheet_storage.cell(row, col_storage).value
+                num_storage = 0 if not num_storage else int(num_storage)
+                self.sheet_storage.cell(row, col).fill = sty.PatternFill(patternType='solid', fgColor="fa8072") \
+                    if num_storage <= 0 else sty.PatternFill(fgColor="ffffff")
         self.f_product.save(self.path + '/product.xlsx')
         print("已更新今日最新库存")
         self.copy_from_sheet_to_new(self.sheet_storage, self.f_backup[self.sheet_date], self.f_backup, '/backup.xlsx')
