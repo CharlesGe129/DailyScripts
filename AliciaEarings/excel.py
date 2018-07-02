@@ -48,30 +48,32 @@ class Excel:
         self.copy_from_sheet_to_new(self.sheet_backup, self.sheet_storage, self.f_product, '/product.xlsx')
         print("已拉取昨日{0}的备份库存作为今日的计算原数据".format(self.sheet_yesterday))
         table = self.sheet_product
-        col_sell, col_id = self.get_col_sell()
-        if col_sell == -1 or col_id == -1:
-            return {'success': False, 'msg': "Doesn't contain column '售出件数' or '产品编号' in sheet {0}".format(table.title)}
+        indices = self.get_indices(table)
+        col_sell = indices['售出件数'] if '售出件数' in indices else 0
+        col_id = indices['产品编号'] if '产品编号' in indices else 0
         col_storage = self.get_col_storage()
-        if col_storage == -1:
-            return {'success': False, 'msg': "Doesn't contain column '库存' in sheet #1"}
         data_storage = [[int(self.sheet_backup.cell(i, 1).value),
                          int(self.sheet_backup.cell(i, col_storage).value) if self.sheet_backup.cell(i, col_storage).value else 0]
                         for i in range(2, self.sheet_backup.max_row + 1)]
         data_sell = list()
-        # Prepare selling information: [id starts from 1, sum of sell]
-        [data_sell.append([int(table.cell(i, col_id).value) - 1, int(table.cell(i, col_sell).value)]) for i in range(2, table.max_row + 1)]
+        # Prepare selling information: [id starts from 1, sum of sell, if sell or buy]
+        [data_sell.append([int(table.cell(i, col_id).value) - 1, int(table.cell(i, col_sell).value),
+                           table.cell(i, indices['微信名']).value != '进货']) for i in range(2, table.max_row + 1)]
         # Calculate today's storage
         for entry in data_sell:
-            data_storage[entry[0]][1] -= entry[1]
+            data_storage[entry[0]][1] -= entry[1] if entry[2] else -entry[1]
         # Write back to xlsx
         for each in data_storage:
             self.sheet_storage.cell(each[0] + 1, col_storage).value = each[1]
         for row in range(2, self.sheet_storage.max_row + 1):
-            for col in range(1, self.sheet_storage.max_column + 1):
-                num_storage = self.sheet_storage.cell(row, col_storage).value
-                num_storage = 0 if not num_storage else int(num_storage)
-                self.sheet_storage.cell(row, col).fill = sty.PatternFill(patternType='solid', fgColor="fa8072") \
-                    if num_storage <= 0 else sty.PatternFill(fgColor="ffffff")
+            num_storage = self.sheet_storage.cell(row, col_storage).value
+            num_storage = 0 if not num_storage else int(num_storage)
+            if num_storage <= 0:
+                for col in range(1, self.sheet_storage.max_column + 1):
+                    self.sheet_storage.cell(row, col).fill = sty.PatternFill(patternType='solid', fgColor="fa8072")
+            else:
+                for col in range(1, self.sheet_storage.max_column + 1):
+                    self.sheet_storage.cell(row, col).fill = sty.PatternFill(fgColor="ffffff")
         self.f_product.save(self.path + '/product.xlsx')
         print("已更新今日最新库存")
         self.copy_from_sheet_to_new(self.sheet_storage, self.f_backup[self.sheet_date], self.f_backup, '/backup.xlsx')
@@ -82,6 +84,8 @@ class Excel:
         table = self.sheet_product
         indices = self.get_indices(table)
         for i in range(2, table.max_row + 1):
+            if table.cell(i, indices['微信名']).value == '进货':
+                continue
             num = int(table.cell(i, indices['售出件数']).value)
             value = float(table.cell(i, indices['单价']).value)
             bonus = float(table.cell(i, indices['优惠']).value)
@@ -101,6 +105,8 @@ class Excel:
         indices = self.get_indices(table)
         data = dict()
         for i in range(2, table.max_row + 1):
+            if table.cell(i, indices['微信名']).value == '进货':
+                continue
             entry = list()
             for j in range(1, table.max_column + 1):
                 entry.append(table.cell(i, j).value)
@@ -114,6 +120,7 @@ class Excel:
                 data[id]['sum'] = total
                 data[id]['entry'] = [entry]
         i = 2
+        j = 0
         for id, value in data.items():
             for each_row in value['entry']:
                 for j in range(len(each_row)):
@@ -123,17 +130,6 @@ class Excel:
         table.cell(1, j + 2).value = '该用户今日总购买金额（若一日多单请老婆大人自行计算~）'
         self.f_product.save(self.path + '/product.xlsx')
         print("已初步整理今日每个微信买家的产品信息及总购买金额。若一日多单请老婆大人自行计算该单需要额外支付多少钱~")
-
-    def get_col_sell(self):
-        table = self.sheet_product
-        col_sell = -1
-        col_id = -1
-        for i in range(1, table.max_column + 1):
-            if table.cell(1, i).value == '售出件数':
-                col_sell = i
-            if table.cell(1, i).value == '产品编号':
-                col_id = i
-        return col_sell, col_id
 
     def get_col_storage(self):
         table = self.sheet_backup
@@ -160,10 +156,20 @@ class Excel:
             indices[table.cell(1, i).value] = i
         return indices
 
+    def all_storage(self):
+        table = self.sheet_storage
+        indices = self.get_indices(table)
+        col_index = indices['序号']
+        col_name = indices['名字']
+        col_num = indices['库存']
+        for i in range(2, table.max_row + 1):
+            print("#{0}, {1}, 库存: {2}".format(table.cell(i, col_index).value, table.cell(i, col_name).value,
+                                              table.cell(i, col_num).value))
+
 
 path = '/Users/charlesge/Downloads/AliciaEarings'
 
-e = Excel(path=path)
+e = Excel(path=path, today='07.02')
 response = e.cal_today_storage()
 if not response['success']:
     print(response['msg'])
