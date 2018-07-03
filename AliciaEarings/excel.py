@@ -45,6 +45,35 @@ class Excel:
         return previous.strftime('%m.%d')
 
     def cal_today_storage(self):
+
+        def update_storage():
+            for each in data_storage:
+                self.sheet_storage.cell(each[0] + 1, col_storage).value = each[1]
+            for row in range(2, self.sheet_storage.max_row + 1):
+                num_storage = self.sheet_storage.cell(row, col_storage).value
+                num_storage = 0 if not num_storage else int(num_storage)
+                if num_storage <= 0:
+                    for col in range(1, self.sheet_storage.max_column + 1):
+                        self.sheet_storage.cell(row, col).fill = sty.PatternFill(patternType='solid', fgColor="fa8072")
+                else:
+                    for col in range(1, self.sheet_storage.max_column + 1):
+                        self.sheet_storage.cell(row, col).fill = sty.PatternFill(fgColor="ffffff")
+            self.f_product.save(self.path + '/product.xlsx')
+            print("已更新今日最新库存")
+
+        def update_backup():
+            table_backup_today = self.f_backup[self.sheet_date]
+            self.copy_from_sheet_to_new(self.sheet_storage, table_backup_today, self.f_backup,
+                                        '/backup.xlsx')
+            for row in range(2, table_backup_today.max_row + 1):
+                num_storage = table_backup_today.cell(row, col_storage).value
+                num_storage = 0 if not num_storage else int(num_storage)
+                if num_storage <= 0:
+                    for col in range(1, table_backup_today.max_column + 1):
+                        table_backup_today.cell(row, col).fill = sty.PatternFill(patternType='solid', fgColor="fa8072")
+            self.f_backup.save(self.path + '/backup.xlsx')
+            print("已备份今日最新库存")
+
         self.copy_from_sheet_to_new(self.sheet_backup, self.sheet_storage, self.f_product, '/product.xlsx')
         print("已拉取昨日{0}的备份库存作为今日的计算原数据".format(self.sheet_yesterday))
         table = self.sheet_product
@@ -63,21 +92,8 @@ class Excel:
         for entry in data_sell:
             data_storage[entry[0]][1] -= entry[1] if entry[2] else -entry[1]
         # Write back to xlsx
-        for each in data_storage:
-            self.sheet_storage.cell(each[0] + 1, col_storage).value = each[1]
-        for row in range(2, self.sheet_storage.max_row + 1):
-            num_storage = self.sheet_storage.cell(row, col_storage).value
-            num_storage = 0 if not num_storage else int(num_storage)
-            if num_storage <= 0:
-                for col in range(1, self.sheet_storage.max_column + 1):
-                    self.sheet_storage.cell(row, col).fill = sty.PatternFill(patternType='solid', fgColor="fa8072")
-            else:
-                for col in range(1, self.sheet_storage.max_column + 1):
-                    self.sheet_storage.cell(row, col).fill = sty.PatternFill(fgColor="ffffff")
-        self.f_product.save(self.path + '/product.xlsx')
-        print("已更新今日最新库存")
-        self.copy_from_sheet_to_new(self.sheet_storage, self.f_backup[self.sheet_date], self.f_backup, '/backup.xlsx')
-        print("已备份今日最新库存")
+        update_storage()
+        update_backup()
         return {'success': True}
 
     def cal_today_selling(self):
@@ -120,14 +136,12 @@ class Excel:
                 data[id]['sum'] = total
                 data[id]['entry'] = [entry]
         i = 2
-        j = 0
         for id, value in data.items():
             for each_row in value['entry']:
                 for j in range(len(each_row)):
                     table.cell(i, j + 1).value = each_row[j]
                 table.cell(i, j + 2).value = value['sum']
                 i += 1
-        table.cell(1, j + 2).value = '该用户今日总购买金额（若一日多单请老婆大人自行计算~）'
         self.f_product.save(self.path + '/product.xlsx')
         print("已初步整理今日每个微信买家的产品信息及总购买金额。若一日多单请老婆大人自行计算该单需要额外支付多少钱~")
 
@@ -169,9 +183,10 @@ class Excel:
 
 path = '/Users/charlesge/Downloads/AliciaEarings'
 
-e = Excel(path=path, today='07.02')
+e = Excel(path=path, today='07.03')
 response = e.cal_today_storage()
 if not response['success']:
     print(response['msg'])
 e.cal_today_selling()
 e.cal_order_group_by_buyer()
+e.all_storage()
