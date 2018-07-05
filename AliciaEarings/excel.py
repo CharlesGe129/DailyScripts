@@ -3,6 +3,7 @@ import openpyxl.styles as sty
 import os
 import time
 import datetime
+import sys
 
 
 class Excel:
@@ -183,7 +184,7 @@ class Excel:
 
 path = '/Users/charlesge/Downloads/AliciaEarings'
 
-e = Excel(path=path, today='07.03')
+e = Excel(path=path, today=sys.argv[1] if len(sys.argv) == 2 else '')
 response = e.cal_today_storage()
 if not response['success']:
     print(response['msg'])
