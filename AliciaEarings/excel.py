@@ -87,8 +87,12 @@ class Excel:
                         for i in range(2, self.sheet_backup.max_row + 1)]
         data_sell = list()
         # Prepare selling information: [id starts from 1, sum of sell, if sell or buy]
-        [data_sell.append([int(table.cell(i, col_id).value) - 1, int(table.cell(i, col_sell).value),
-                           table.cell(i, indices['微信名']).value != '进货']) for i in range(2, table.max_row + 1)]
+        for i in range(2, table.max_row + 1):
+            if table.cell(i, col_id).value is None:
+                print('"Product.xlsx"的"{0}"表, 第{1}行缺少产品id，跳过该行'.format(self.sheet_date, i))
+                continue
+            data_sell.append([int(table.cell(i, col_id).value) - 1, int(table.cell(i, col_sell).value),
+                              table.cell(i, indices['微信名']).value != '进货'])
         # Calculate today's storage
         for entry in data_sell:
             data_storage[entry[0]][1] -= entry[1] if entry[2] else -entry[1]
@@ -102,6 +106,8 @@ class Excel:
         indices = self.get_indices(table)
         for i in range(2, table.max_row + 1):
             if table.cell(i, indices['微信名']).value == '进货':
+                continue
+            if not self.check_required_fields(table, i):
                 continue
             num = int(table.cell(i, indices['售出件数']).value)
             value = float(table.cell(i, indices['单价']).value)
@@ -124,10 +130,17 @@ class Excel:
         for i in range(2, table.max_row + 1):
             if table.cell(i, indices['微信名']).value == '进货':
                 continue
-            entry = list()
-            for j in range(1, table.max_column + 1):
-                entry.append(table.cell(i, j).value)
-            id = table.cell(i, indices['微信id']).value
+            id = table.cell(i, indices['微信名']).value
+            entry = [table.cell(i, j).value if table.cell(i, j).value else '' for j in range(1, table.max_column + 1)]
+            if not self.check_required_fields(table, i):
+                # Copy this line
+                if id in data:
+                    data[id]['entry'].append(entry)
+                else:
+                    data[id] = dict()
+                    data[id]['sum'] = 0
+                    data[id]['entry'] = [entry]
+                continue
             total = table.cell(i, indices['折后金额']).value
             if id in data:
                 data[id]['sum'] += total
@@ -141,8 +154,10 @@ class Excel:
             for each_row in value['entry']:
                 for j in range(len(each_row)):
                     table.cell(i, j + 1).value = each_row[j]
-                table.cell(i, j + 2).value = value['sum']
+                table.cell(i, indices['折后利润'] + 1).value = value['sum']
                 i += 1
+        if table.max_row > 1:
+            table.cell(1, indices['折后利润'] + 1).value = '该用户今日总购买金额（若一日多单请老婆大人自行计算~）'
         self.f_product.save(self.path + '/product.xlsx')
         print("已初步整理今日每个微信买家的产品信息及总购买金额。若一日多单请老婆大人自行计算该单需要额外支付多少钱~")
 
@@ -154,6 +169,20 @@ class Excel:
                 col_storage = i
                 break
         return col_storage
+
+    def check_required_fields(self, table, i):
+        indices = self.get_indices(table)
+        success = True
+        if not table.cell(i, indices['售出件数']).value:
+            success = False
+            print('"Product.xlsx"的"{0}"表, 第{1}行缺少"售出件数"，跳过该行'.format(self.sheet_date, i))
+        if not table.cell(i, indices['单价']).value:
+            success = False
+            print('"Product.xlsx"的"{0}"表, 第{1}行缺少"单价"，跳过该行'.format(self.sheet_date, i))
+        if not table.cell(i, indices['优惠']).value:
+            success = False
+            print('"Product.xlsx"的"{0}"表, 第{1}行缺少"优惠"，跳过该行'.format(self.sheet_date, i))
+        return success
 
     def copy_from_sheet_to_new(self, sheet_ori, sheet_des, file, filename):
         for i in range(1, sheet_des.max_row + 1):
