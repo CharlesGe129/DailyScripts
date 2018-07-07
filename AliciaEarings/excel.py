@@ -36,6 +36,23 @@ class Excel:
         self.sheet_backup = f_backup[self.sheet_yesterday]
         self.sheet_backup_today = f_backup[self.sheet_date] if self.sheet_date in f_backup.sheetnames \
             else f_backup.create_sheet(self.sheet_date)
+        self.data_storage = dict()
+        self.parse_storage()
+
+    def parse_storage(self):
+        table = self.sheet_backup
+        indices = self.get_indices(table)
+        for row in range(2, table.max_row + 1):
+            id = table.cell(row, indices['序号']).value
+            self.data_storage[id] = dict()
+            self.data_storage[id]['name'] = table.cell(row, indices['名字']).value
+            cost = table.cell(row, indices['成本']).value
+            self.data_storage[id]['cost'] = float(cost) if cost else 0.0
+            price = table.cell(row, indices['单价']).value
+            self.data_storage[id]['price'] = float(price) if price else 0.0
+            self.data_storage[id]['profit'] = self.data_storage[id]['price'] - self.data_storage[id]['cost']
+            storage = table.cell(row, indices['库存']).value
+            self.data_storage[id]['storage'] = storage if storage else 0
 
     @staticmethod
     def cal_yesterday(today):
@@ -48,8 +65,10 @@ class Excel:
     def cal_today_storage(self):
 
         def update_storage():
-            for each in data_storage:
-                self.sheet_storage.cell(each[0] + 1, col_storage).value = each[1]
+            table = self.sheet_storage
+            indices = self.get_indices(table)
+            for row in range(2, table.max_row + 1):
+                table.cell(row, col_storage).value = self.data_storage[table.cell(row, indices['序号']).value]['storage']
             for row in range(2, self.sheet_storage.max_row + 1):
                 num_storage = self.sheet_storage.cell(row, col_storage).value
                 num_storage = 0 if not num_storage else int(num_storage)
@@ -80,22 +99,20 @@ class Excel:
         table = self.sheet_product
         indices = self.get_indices(table)
         col_sell = indices['售出件数'] if '售出件数' in indices else 0
-        col_id = indices['产品编号'] if '产品编号' in indices else 0
-        col_storage = self.get_col_storage()
-        data_storage = [[int(self.sheet_backup.cell(i, 1).value),
-                         int(self.sheet_backup.cell(i, col_storage).value) if self.sheet_backup.cell(i, col_storage).value else 0]
-                        for i in range(2, self.sheet_backup.max_row + 1)]
+        col_id = indices['产品编号']
+        # data_storage = [id, storage]
+        col_storage = self.get_indices(self.sheet_backup)['库存']
         data_sell = list()
         # Prepare selling information: [id starts from 1, sum of sell, if sell or buy]
         for i in range(2, table.max_row + 1):
             if table.cell(i, col_id).value is None:
                 print('"Product.xlsx"的"{0}"表, 第{1}行缺少产品id，跳过该行'.format(self.sheet_date, i))
                 continue
-            data_sell.append([int(table.cell(i, col_id).value) - 1, int(table.cell(i, col_sell).value),
+            data_sell.append([table.cell(i, col_id).value, int(table.cell(i, col_sell).value),
                               table.cell(i, indices['微信名']).value != '进货'])
         # Calculate today's storage
         for entry in data_sell:
-            data_storage[entry[0]][1] -= entry[1] if entry[2] else -entry[1]
+            self.data_storage[entry[0]]['storage'] -= entry[1] if entry[2] else -entry[1]
         # Write back to xlsx
         update_storage()
         update_backup()
@@ -110,13 +127,21 @@ class Excel:
             if not self.check_required_fields(table, i):
                 continue
             num = int(table.cell(i, indices['售出件数']).value)
-            value = float(table.cell(i, indices['单价']).value)
+
+            id = table.cell(i, indices['产品编号']).value
+            price = self.data_storage[id]['price']
+            cost = self.data_storage[id]['cost']
+            profit = self.data_storage[id]['profit']
             bonus = float(table.cell(i, indices['优惠']).value)
-            total = num * value
-            total_cost = num * float(table.cell(i, indices['成本']).value)
+
+            total = num * price
+            total_cost = num * cost
             original_profit = total - total_cost
             total_final = total * bonus
             total_profit = total_final - total_cost
+            table.cell(i, indices['单价']).value = price
+            table.cell(i, indices['成本']).value = cost
+            table.cell(i, indices['利润']).value = profit
             table.cell(i, indices['总金额']).value = total
             table.cell(i, indices['总利润']).value = original_profit
             table.cell(i, indices['折后金额']).value = total_final
@@ -161,24 +186,12 @@ class Excel:
         self.f_product.save(self.path + '/product.xlsx')
         print("已初步整理今日每个微信买家的产品信息及总购买金额。若一日多单请老婆大人自行计算该单需要额外支付多少钱~")
 
-    def get_col_storage(self):
-        table = self.sheet_backup
-        col_storage = -1
-        for i in range(1, table.max_column + 1):
-            if table.cell(1, i).value == '库存':
-                col_storage = i
-                break
-        return col_storage
-
     def check_required_fields(self, table, i):
         indices = self.get_indices(table)
         success = True
         if not table.cell(i, indices['售出件数']).value:
             success = False
             print('"Product.xlsx"的"{0}"表, 第{1}行缺少"售出件数"，跳过该行'.format(self.sheet_date, i))
-        if not table.cell(i, indices['单价']).value:
-            success = False
-            print('"Product.xlsx"的"{0}"表, 第{1}行缺少"单价"，跳过该行'.format(self.sheet_date, i))
         if not table.cell(i, indices['优惠']).value:
             success = False
             print('"Product.xlsx"的"{0}"表, 第{1}行缺少"优惠"，跳过该行'.format(self.sheet_date, i))
