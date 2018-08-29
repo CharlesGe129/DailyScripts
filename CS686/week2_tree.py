@@ -1,10 +1,12 @@
+count = 0
+
 class Node:
     def __init__(self, char):
         self.isWord = False
         self.char = char
         self.children = dict()
 
-count = 0
+
 class AC:
     def __init__(self):
         self.root = Node('')
