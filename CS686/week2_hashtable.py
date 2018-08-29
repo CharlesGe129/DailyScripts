@@ -50,4 +50,4 @@ class AC:
 
 a = AC()
 a.initial('data.txt')
-a.autocomplete('bare')
+a.autocomplete('bar')
