@@ -34,108 +34,31 @@ class CF:
         return x
 
     def check(self, x, y):
-        self.check_ho(x, y)
-        self.check_ve(x, y)
-        self.check_le(x, y)
-        self.check_ri(x, y)
+        self.check_single(x, y, 0, 1)
+        self.check_single(x, y, 1, 0)
+        self.check_single(x, y, 1, 1)
+        self.check_single(x, y, -1, 1)
 
-    def check_ho(self, x, y):
-        color = self.matrix[x][y]
-        score = -1
-        j = y
-        while j >= 0:
-            if self.matrix[x][j] == color:
-                score += 1
-            else:
-                break
-            j -= 1
-        j = y
-        while j < self.col:
-            if self.matrix[x][j] == color:
-                score += 1
-            else:
-                break
-            j += 1
-        if score >= self.num:
-            self.over = True
-            print(f'horizontal [{x}, {y}]')
-            # print(f'color = {self.matrix[x][y]}, less[{x}, {y+1}] = {self.matrix[x][y+1]}, r = {self.matrix[x][y] == self.matrix[x][y+1]}')
-            return
-
-    def check_ve(self, x, y):
-        color = self.matrix[x][y]
-        score = -1
-        i = x
-        while i >= 0:
-            if self.matrix[i][y] == color:
-                score += 1
-            else:
-                break
-            i -= 1
-        i = x
-        while i < self.row:
-            if self.matrix[i][y] == color:
-                score += 1
-            else:
-                break
-            i += 1
-        if score >= self.num:
-            self.over = True
-            print(f'vertical [{x}, {y}]')
-            # print(f'color = {self.matrix[x][y]}, less[{x+1}, {y}] = {self.matrix[x+1][y]}, r = {self.matrix[x][y] == self.matrix[x+1][y]}')
-            return
-
-    def check_le(self, x, y):
+    def check_single(self, x, y, dx, dy):
         color = self.matrix[x][y]
         score = -1
         i = x
         j = y
-        while i >= 0 and j >= 0:
-            if self.matrix[i][j] == color:
-                score += 1
-            else:
-                break
-            i -= 1
-            j -= 1
+        while self.row > i >= 0 and self.col > j >= 0 and self.matrix[i][j] == color:
+            score += 1
+            i += dx
+            j += dy
         i = x
         j = y
-        while i < self.row and j < self.col:
-            if self.matrix[i][j] == color:
-                score += 1
-            else:
-                break
-            i += 1
-            j += 1
+        dx = -dx
+        dy = -dy
+        while self.row > i >= 0 and self.col > j >= 0 and self.matrix[i][j] == color:
+            score += 1
+            i += dx
+            j += dy
         if score >= self.num:
             self.over = True
-            print(f'left top [{x}, {y}] to right bottom')
-            return
-
-    def check_ri(self, x, y):
-        color = self.matrix[x][y]
-        score = -1
-        i = x
-        j = y
-        while i >= 0 and j < self.col:
-            if self.matrix[i][j] == color:
-                score += 1
-            else:
-                break
-            i -= 1
-            j += 1
-        i = x
-        j = y
-        while i < self.row and j >= 0:
-            if self.matrix[i][j] == color:
-                score += 1
-            else:
-                break
-            i += 1
-            j -= 1
-        if score >= self.num:
-            self.over = True
-            print(f'right top [{x}, {y}] to left bottom')
-            return
+            print(f'finish at row={x+1}, col={y+1}')
 
     def print(self):
         for i in range(self.row):
