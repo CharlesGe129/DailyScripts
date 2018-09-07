@@ -99,8 +99,8 @@ class Game:
             [self.traverse(each, end, f"{path}-{each}", count + 1) for each in adj]
             self.flag_distance[start] = False
 
-a = Game()
-a.create_tile()
-a.tile.print_hex()
-a.distance(a.tile.hexes[random.randint(0, 18)], a.tile.hexes[random.randint(0, 18)])
-a.distance(a.tile.hexes[15], a.tile.hexes[8])
+# a = Game()
+# a.create_tile()
+# a.tile.print_hex()
+# a.distance(a.tile.hexes[random.randint(0, 18)], a.tile.hexes[random.randint(0, 18)])
+# a.distance(a.tile.hexes[15], a.tile.hexes[8])
