@@ -2,3 +2,5 @@
 test.*
 test*
 .gitignore.*
+*.pyc
+__init__.py
