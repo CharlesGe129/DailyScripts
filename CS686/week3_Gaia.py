@@ -32,23 +32,23 @@ class Tile:
         self.hexes[14].adj = self.cal_hex_adj_by_type(14, 1)
         self.hexes[15].adj = self.cal_hex_adj_by_type(15, 4)
         self.hexes[16].adj = self.cal_hex_adj_by_type(16, 0)
-        self.hexes[17].adj = [18]
+        self.hexes[17].adj = [self.hexes[18]]
 
     # 5 types: 0=[1, 2], 1=[2, 3, 4], 2=[4, 5], 3=[4, 6], 5=[7]
-    @staticmethod
-    def cal_hex_adj_by_type(num, type):
-        return {0: [num+1, num+2],
+    def cal_hex_adj_by_type(self, num, type_no):
+        adj_lists = {0: [num+1, num+2],
                 1: [num+1, num+2, num+3],
                 2: [num+2, num+3],
                 3: [num+1, num+3],
-                4: [num+2]}[type]
+                4: [num+2]}[type_no]
+        return [self.hexes[each] for each in adj_lists]
 
     def cal_hex_reverse_adj(self):
         for i in range(17, -1, -1):
-            for start in self.hexes[i].adj:
-                self.hexes[start].adj = [i] + self.hexes[start].adj
+            for each in self.hexes[i].adj:
+                each.adj = [self.hexes[i]] + each.adj
         for i in range(19):
-            print(f"{i}: {self.hexes[i].adj}")
+            print(f"{i}: {[each.name for each in self.hexes[i].adj]}")
 
     def print_hex(self):
         print("   00")
@@ -80,7 +80,7 @@ class Game:
     def distance(self, h1, h2):
         self.rs_distance = dict()
         self.flag_distance = [False for i in range(19)]
-        self.traverse(h1.name, h2.name, str(h1.name), 0)
+        self.traverse(h1, h2, str(h1.name), 0)
         distance = sorted(self.rs_distance.keys())[0]
         print(f"Distance between hex[{h1.name}] and hex[{h2.name}] is {distance}")
         [print(each) for each in self.rs_distance[distance]]
@@ -93,14 +93,13 @@ class Game:
                 self.rs_distance[count].append(path)
             else:
                 self.rs_distance[count] = [path]
-        elif not self.flag_distance[start]:
-            self.flag_distance[start] = True
-            adj = self.tile.hexes[start].adj
-            [self.traverse(each, end, f"{path}-{each}", count + 1) for each in adj]
-            self.flag_distance[start] = False
+        elif not self.flag_distance[start.name]:
+            self.flag_distance[start.name] = True
+            [self.traverse(each, end, f"{path}-{each.name}", count + 1) for each in start.adj]
+            self.flag_distance[start.name] = False
 
-# a = Game()
-# a.create_tile()
-# a.tile.print_hex()
-# a.distance(a.tile.hexes[random.randint(0, 18)], a.tile.hexes[random.randint(0, 18)])
-# a.distance(a.tile.hexes[15], a.tile.hexes[8])
+a = Game()
+a.create_tile()
+a.tile.print_hex()
+a.distance(a.tile.hexes[random.randint(0, 18)], a.tile.hexes[random.randint(0, 18)])
+a.distance(a.tile.hexes[15], a.tile.hexes[8])
