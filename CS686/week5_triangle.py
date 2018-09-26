@@ -50,3 +50,4 @@ class Solution:
 
 
 Solution().cal_triangle_expensive_path()
+# print(sum([int(each) for each in path.split('-')]))
