@@ -44,4 +44,14 @@ class KnightOnPhonePanel:
             print(path)
         print(f"biggest distinct number: {biggest_distinct}")
 
-KnightOnPhonePanel().biggest_distinct_numbers(1, 4)
+    def test(self, num, step):
+        moves = self.panel[num]
+        if step == 1:
+            return len(moves)
+        count = 0
+        for move in moves:
+            count = count + self.test(move, step-1)
+        return count
+
+KnightOnPhonePanel().biggest_distinct_numbers(1, 5)
+print(KnightOnPhonePanel().test(1, 5))
